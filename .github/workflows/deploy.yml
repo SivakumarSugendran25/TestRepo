@@ -36,8 +36,8 @@ jobs:
 
       - name: Push to Octopus Deploy
         env:
-          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
-          OCTOPUS_SERVER: ${{ secrets.OCTOPUS_SERVER }}
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUSSERVERAPIKEY }}
+          OCTOPUS_SERVER: ${{ secrets.OCTOPUSERVERURL }}
         run: |
           curl -sSL https://github.com/OctopusDeploy/OctopusCLI/releases/download/7.4.0/OctopusTools.7.4.0.linux-x64.tar.gz | tar xz
           ./octo pack --id=simple-json-package --version=1.0.0 --basePath=output --outFolder=.
