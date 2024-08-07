@@ -1,4 +1,4 @@
-name: Build and Push Artifact
+name: Build and Deploy
 
 on:
   push:
@@ -10,16 +10,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Build Artifact
-      run: |
-        mkdir -p artifacts
-        cp simple.json artifacts/
+      - name: Build artifact
+        run: |
+          mkdir -p output
+          cp simple.json output/
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: json-artifact
-        path: artifacts/simple.json
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: simple-json-package
+          path: output
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: simple-json-package
+
+      - name: Push to Octopus Deploy
+        env:
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+          OCTOPUS_SERVER: ${{ secrets.OCTOPUS_SERVER }}
+        run: |
+          curl -sSL https://github.com/OctopusDeploy/OctopusCLI/releases/download/7.4.0/OctopusTools.7.4.0.linux-x64.tar.gz | tar xz
+          ./octo pack --id=simple-json-package --version=1.0.0 --basePath=output --outFolder=.
+          ./octo push --package=simple-json-package.1.0.0.zip --server=$OCTOPUS_SERVER --apiKey=$OCTOPUS_API_KEY
