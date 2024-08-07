@@ -1,49 +1,48 @@
-name: Build and Deploy
+name: Build and Deploy JSON
 
 on:
   push:
     branches:
-      - main
+      - 'main'
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
+      # Install dependencies
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y curl tar
+
+      # Install Octopus CLI
+      - name: Install Octopus CLI
+        uses: OctopusDeploy/install-octopus-cli-action@v1.1.9
+
+      # Build the artifact
       - name: Build artifact
         run: |
           mkdir -p output
           cp simple.json output/
 
+      # Upload artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: simple-json-package
           path: output
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
+      # Download artifact (in case of separate jobs)
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
           name: simple-json-package
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y curl tar
+      # Pack the files into a zip
+      - name: Package simple-json
+        run: octo pack --id=simple-json-package --format=Zip --version=1.0.${{ github.run_number }} --basePath=output --outFolder=output
 
-      - name: Push to Octopus Deploy
-        env:
-          OCTOPUS_API_KEY: ${{ secrets.OCTOPUSSERVERAPIKEY }}
-          OCTOPUS_SERVER: ${{ secrets.OCTOPUSERVERURL }}
-        run: |
-          curl -sSL https://github.com/OctopusDeploy/OctopusCLI/releases/download/7.4.0/OctopusCLI.7.4.0.linux-x64.tar.gz | tar xz
-          ./octo pack --id=simple-json-package --version=1.0.0 --basePath=output --outFolder=.
-          ./octo push --package=simple-json-package.1.0.0.zip --server=$OCTOPUS_SERVER --apiKey=$OCTOPUS_API_KEY
+      # Push the zip to the server
+      - name: Push simple-json-package
+        run: octo push --package="output/simple-json-package.1.0.${{ github.run_number }}.zip" --server="${{ secrets.OCTOPUSERVERURL }}" --apiKey="${{ secrets.OCTOPUSSERVERAPIKEY }}" --space="${{ secrets.OCTOPUSSERVER_SPACE }}"
