@@ -34,11 +34,16 @@ jobs:
         with:
           name: simple-json-package
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl tar
+
       - name: Push to Octopus Deploy
         env:
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUSSERVERAPIKEY }}
           OCTOPUS_SERVER: ${{ secrets.OCTOPUSERVERURL }}
         run: |
-          curl -sSL https://github.com/OctopusDeploy/OctopusCLI/releases/download/7.4.0/OctopusTools.7.4.0.linux-x64.tar.gz | tar xz
+          curl -sSL https://github.com/OctopusDeploy/OctopusCLI/releases/download/7.4.0/OctopusCLI.7.4.0.linux-x64.tar.gz | tar xz
           ./octo pack --id=simple-json-package --version=1.0.0 --basePath=output --outFolder=.
           ./octo push --package=simple-json-package.1.0.0.zip --server=$OCTOPUS_SERVER --apiKey=$OCTOPUS_API_KEY
